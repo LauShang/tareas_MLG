@@ -1,0 +1,120 @@
+---
+title: "Tarea 2"
+date: "6-feb-2024"
+format: html
+editor: source
+---
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(patchwork)
+```
+
+
+1. Estimando una media Poisson usando una inicial discreta. Supongan que son dueños de una compañía de transporte con una flota grande de camiones. Las descomposturas ocurren aleatoriamente en el tiempo y supóngase que el número de descomposturas durante un
+intervalo de $t$ días sigue un distribución Poisson con media $λt$. El parámetro $λ$ es la tasa de descompostura diaria. Los posibles valores para $λ$ son $0.5$, $1$, $1.5$, $2$, $2.5$ y $3$, con respectivas probabilidades $0.1$, $0.2$, $0.3$, $0.2$, $0.15$ y $0.05$. Si uno observa $y$ descomposturas, entonces la probabilidad posterior de $λ$ es proporcional a 
+
+$$g(λ) exp(−tλ)(tλ)y,$$
+donde $g$ es la distribución inicial.
+
+a. Si $12$ camiones se descomponen en un periodo de $6$ días, encontrar la probabilidad posterior para las diferentes tasas.
+
+```{r}
+tasas_lambda <- c(0.5, 1, 1.5, 2, 2.5, 3)
+prob_iniciales <- c(0.1, 0.2, 0.3, 0.2, 0.15, 0.05)
+y <- 12
+t <- 6
+
+# Cálculo de la probabilidad posterior para cada tasa lambda
+prob_posterior <- prob_iniciales * exp(-tasas_lambda * t) * (tasas_lambda * t)^y
+# Normalización de las probabilidades posteriores
+prob_posterior <- prob_posterior / sum(prob_posterior)
+print(prob_posterior)
+```
+
+b. Encontrar la probabilidad de que no haya descomposturas durante la siguiente semana.
+
+```{r}
+t_siguiente_semana <- 7
+
+# Cálculo de la probabilidad de cero descomposturas para cada tasa lambda
+prob_cero_descomposturas <- exp(-tasas_lambda * t_siguiente_semana)
+
+# Cálculo de la probabilidad promedio ponderada usando las probabilidades posteriores
+probabilidad_ponderada_cero_descomposturas <- sum(prob_posterior * prob_cero_descomposturas)
+
+print(probabilidad_ponderada_cero_descomposturas)
+```
+
+Hint: Si la tasa es $λ$, la probabilidad condicional de no descomposturas durante un periodo de $7$ días está dado por $\exp(−7λ)$. Se puede calcular esta probabilidad predictiva multiplicando la lista de probabilidades condicionales por las probabilidades posteriores de $λ$ y encontrando la suma de los productos
+
+
+
+2. Estimando una proporción y predicción de una muestra futura. Un estudio reporta sobre los efectos de largo plazo de exposición a bajas dosis de plomo en niños. Los investigadores analizaron el contenido de plomo en la caída de los dientes de leche. De los niños cuyos dientes tienen un contenido de plomo mayor que $22.22$ ppm, $22$ eventualmente se graduaron de la preparatoria y $7$ no. Supongan que su densidad inicial para $p$, la proporción de todos tales niños que se graduaron de preparatoria es $beta(1, 1)$, y posterior es $beta(23, 8)$.
+
+a. Encontrar un intervalo estimado de $90 %$ para $p$.
+
+```{r}
+alpha_post <- 23
+beta_post <- 8
+
+# Intervalo estimado de 90% para p
+intervalo_90 <- qbeta(c(0.05, 0.95), alpha_post, beta_post)
+print(intervalo_90)
+```
+
+b. Encontrar la probabilidad de que $p$ exceda 0.6.
+
+```{r}
+prob_p_mayor_06 <- 1 - pbeta(0.6, alpha_post, beta_post)
+print(prob_p_mayor_06)
+```
+
+3. Estimando una media normal posterior con una inicial discreta. Supongamos que están interesados en estimar el promedio de caida de lluvia por año $µ$ en (cm) para una ciudad grande del Centro de México. Supongan que la caída anual individual $y_1 , . . . , y_n$ son obtenidas de una población que se supone $N (µ, 100)$. Antes de recolectar los datos, supongan que creen que la lluvia media puede estar en los siguiente valores con respectivas probabilidades
+
+```{r}
+miu = c(20,30,40,50,60,70)
+
+g_miu = c(0.1, 0.15, 0.25, 1, 0.25, 0.15, 0.1)
+```
+
+a. Supongan que se observan los totales de caída de lluvia $38.6$, $42.4$, $57.5$, $40.5$, $51.7$, $67.1$, $33.4$, $60.9$, $64.1$, $40.1$, $40.7$ y $6.4$. Calcular la media.
+
+```{r}
+observaciones <- c(38.6, 42.4, 57.5, 40.5, 51.7, 67.1, 33.4, 60.9, 64.1, 40.1, 40.7, 6.4)
+media_observaciones <- mean(observaciones)
+print(media_observaciones)
+```
+
+b. Calcular la función de verosimilitud utilizando como estadística suficiente la media $ȳ$.
+
+* Calcular las probabilidades posteriores para $µ$
+
+```{r}
+sigma_cuadrado <- 100 
+n <- length(observaciones)
+
+# Cálculo de la verosimilitud para cada µ
+verosimilitud <- exp(-0.5 * n / sigma_cuadrado * (miu - media_observaciones)^2)
+
+# Cálculo de las probabilidades posteriores
+prob_posterior <- verosimilitud * g_miu
+prob_posterior <- prob_posterior / sum(prob_posterior)
+print(prob_posterior)
+```
+
+* Encontrar un intervalo de probabilidad de $80 %$ para $µ$.
+
+```{r}
+ordenados <- order(miu)
+miu_ordenados <- miu[ordenados]
+prob_posterior_ordenadas <- prob_posterior[ordenados]
+
+# Encontrar el intervalo de probabilidad de 80%
+acumulado <- cumsum(prob_posterior_ordenadas)
+limite_inferior <- miu_ordenados[min(which(acumulado >= 0.1))]
+limite_superior <- miu_ordenados[max(which(acumulado <= 0.9))]
+
+print(paste("Intervalo de probabilidad de 80% para µ: [", limite_inferior, ",", limite_superior, "]", sep=""))
+```
