@@ -1,0 +1,49 @@
+#PREGUNTA 8
+
+```{r}
+# Distribución objetivo
+target_distribution <- c(0.01, 0.39, 0.11, 0.18, 0.26, 0.05)
+
+# Función para calcular la probabilidad de aceptación
+acceptance_probability <- function(new_state, current_state) {
+  return(min(1, target_distribution[new_state] / target_distribution[current_state]))
+}
+
+# Algoritmo de Metropolis-Hastings
+metropolis_hastings <- function(n_samples, initial_state) {
+  samples <- c(initial_state)
+
+  for (i in 1:n_samples) {
+    # Generar propuesta utilizando un dado honesto (discreto uniforme)
+    proposal <- sample(1:6, 1)
+
+    # Calcular la probabilidad de aceptación
+    alpha <- acceptance_probability(proposal, samples[length(samples)])
+
+    # Aceptar la propuesta con probabilidad alpha
+    if (runif(1) < alpha) {
+      samples <- c(samples, proposal)
+    } else {
+      samples <- c(samples, samples[length(samples)])
+    }
+  }
+
+  return(samples)
+}
+
+# Configuración de parámetros
+n_samples <- 1000
+initial_state <- 1
+
+# Generar muestras usando Metropolis-Hastings
+samples <- metropolis_hastings(n_samples, initial_state)
+
+# Visualizar resultados
+hist(samples, breaks = seq(0.5, 6.5, by = 1), col = "lightblue", main = "Muestreo con Metropolis-Hastings",
+     xlab = "Estado", ylab = "Frecuencia", xlim = c(0.5, 6.5), ylim = c(0, max(table(samples))))
+
+points(1:6, target_distribution * n_samples, col = "red", pch = 16)
+legend("topright", legend = c("Muestras", "Distribución Objetivo"), col = c("lightblue", "red"), pch = c(16, NA))
+
+```
+
