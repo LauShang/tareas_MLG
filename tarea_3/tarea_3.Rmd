@@ -1,0 +1,123 @@
+---
+title: "Tarea 3"
+author: "David Escudero, Erwin Minor, Enrique Nava, Lauro Reyes"
+date: "2024-02-21"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(patchwork)
+```
+
+1. Calcular el estimador de Monte Carlo de la integral
+$$\int_0^{\pi/3}\text{sin}(t)dt$$
+y comparar el estimador con el valor exacto de la integral.
+
+'''
+```{r}
+exact_value = 0.5
+monte_carlo <- function(f, xinf, xsup, n) {
+  # Generamos n puntos aleatorios
+  x <- runif(n, xinf, xsup)
+  # Evaluamos f en un conjunto denso para encontrar un máximo más representativo
+  f_max <- max(f(x))
+  # Generamos n puntos aleatorios en el rango [0, f_max]
+  y <- runif(n, 0, f_max)
+  # Calculamos los puntos que caen debajo de la curva de f
+  points_in_curve <- sum(y <= f(x))
+  # Calculamos el área bajo la curva
+  integral_estimate <- (points_in_curve / n) * (xsup - xinf) * f_max
+  return(integral_estimate)
+}
+
+f_sin <- function(x) sin(x)
+n <- 1000000
+xinf <- 0
+xsup <- pi/3
+
+# Ejecución de la función mejorada
+integral_estimate <- monte_carlo(f_sin, xinf, xsup, n)
+sprintf("Integración por Monte Carlo %.4f mientras que el valor exacto es %.4f",integral_estimate,exact_value)
+```
+
+2. EscribirunafunciónparacalcularelestimadordeMonteCarlodelafuncióndedistribución Be (3, 3) y usar la función para estimar F (x) para x = 0.1, . . . , 0.9. Comparar los estimados con los valores obtenidos con la función pbeta de R.
+
+```{r}
+# Define un vector de valores x para evaluar la FDA
+monte_carlo_estimator <- function(x, n = 10000) {
+  # Generar n números aleatorios beta(3, 3)
+  valores_r_beta <- rbeta(n, 3, 3)
+  monte_carlo_estimate <- mean(valores_r_beta <= x)
+  return(monte_carlo_estimate)
+}
+
+# Calcular los estimados de Monte Carlo de F(x) para x = 0.1, 0.2, ..., 0.9
+x_values <- seq(0.1, 0.9, by = 0.1)
+monte_carlo_estimates <- sapply(x_values, monte_carlo_estimator)
+
+# Calcular los valores de referencia de F(x) utilizando la función pbeta de R
+reference_values <- pbeta(x_values, 3, 3)
+
+# Mostrar los resultados
+results <- tibble(x = x_values, Estimador_MC = monte_carlo_estimates, PBETA = reference_values)
+print(results)
+```
+
+3. Usar integración Monte Carlo para estimar:
+$$\int_0^1 \frac{e^{-x}}{1 + x^2} \, dx$$
+y calcular el tamaño de muestra necesario para obtener un error de estimación máximo de ±0.001.
+```{r}
+# Cargamos las librerías necesarias
+library(stats)
+# Definimos la función a integrar
+integrand <- function(x) {
+exp(-x) / (1 + x^2)
+}
+2
+# Realizamos una estimación inicial con un tamaño de muestra moderado para determinar la varianza
+initial_n <- 10000
+initial_sample <- integrand(runif(initial_n, 0, 1))
+initial_estimate <- mean(initial_sample)
+initial_variance <- var(initial_sample)
+# Calculamos el tamaño de muestra necesario para obtener un error máximo de ±0.001 con 95% de confianza
+# Usamos la fórmula n = (Z * sigma / E)ˆ2, donde Z es el valor de Z para el 95% de confianza, sigma es 
+z_value <- qnorm(0.975) # Valor Z para 95% de confianza
+error_margin <- 0.001 # Error máximo permitido
+required_n <- ceiling((z_value * sqrt(initial_variance) / error_margin)^2)
+# Imprimimos el tamaño de muestra necesario y la estimación inicial
+print(paste("Tamaño de muestra necesario:", required_n))
+```
+
+4. Sea ${theta}_$ el estimador de importancia de ${theta} = R g(x) dx$, donde la función de importancia f IS
+es una densidad. Probar que si g(x)/f(x) es acotada, entonces la varianza del estimador de muestreo por importancia σˆIS es finita.
+
+Revisando la definición de la varianza del estimador mediante el método de muestreo por importancia:
+
+-   $\hat{\sigma}_{IS}^2 = \text{Var}(\hat{\theta}_{IS}) = E[(\hat{\theta}_{IS} - \theta)^2]$
+
+Donde:
+
+-   $\hat{\theta}_{IS}$ representa el estimador de muestreo por importancia de $\theta$.
+
+-   $\theta$ es el parámetro real que deseamos estimar (en este contexto, $\int g(x)$). $E[\cdot]$ denota el valor esperado.
+
+Consideremos ahora $W(x) = \frac{g(x)}{f(x)}$. Así, podemos expresar el estimador de muestreo por importancia $\hat{\theta}_{IS}$ *como:* $\hat{\theta}_{IS}$ = $\int W(x) f(x) dx$
+
+Para probar que la varianza del estimador de muestreo por importancia $\hat{\theta}_{IS}$ es limitada, demostraremos que tanto $E[\hat{\theta}_{IS}]$ como $E[\hat{\theta}_{IS}^2]$ son limitados.
+
+1.  Limitación de $E[\hat{\theta}_{IS}]$:
+    -   $E[\hat{\theta}_{IS}]$ = $E[\int W(x) f(x) dx]$ = $\int E[W(x)] f(x) dx ]$
+
+Considerando que $\frac{g(x)}{f(x)}$ está limitada, $W(x)$ es una función limitada, haciendo que $E[W(x)]$ sea finito. Por ende, la integral mencionada es finita, indicando que $E[\hat{\theta}_{IS}]$ es finito.
+
+2.  Limitación de $E[\hat{\theta}_{IS}^2]$:
+    -   $E[\hat{\theta}_{IS}^2]$ = $E[(\int W(x) f(x) dx)^2]$ = $\iint W(x_1)W(x_2) f(x_1)f(x_2) dx_1dx_2$
+
+Ya que $\frac{g(x)}{f(x)}$ está limitada, $W(x)$ es una función limitada, por lo cual $W(x_1)W(x_2)$ es limitada para cualquier par de $x_1$ y $x_2$. Esto hace que la integral doble sea finita, lo que implica que $E[\hat{\theta}_{IS}^2]$ es finito.
+
+Dado que tanto $E[\hat{\theta}_{IS}]$ como $E[\hat{\theta}_{IS}^2]$ son finitos, concluimos que la varianza $\hat{\sigma}_{IS}^2$ también es finita.
+
+
